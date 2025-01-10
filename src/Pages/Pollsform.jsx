@@ -26,20 +26,19 @@ function Pollsform() {
         options: pollsData.options,
         createdAt: timestamp
       });
-      console.log("Poll created with ID:", docRef.id);
       setpollsData({
         id: "",
         title: "",
         options: [],
         createdAt: ""
       });
-      toast.success("Poll created successfully...");
+      toast.success("poll created successfully...");
       setTimeout(() => {
         navigate('/home')
       }, 3000);
     } catch (error) {
-      console.error("Error in created poll:", error);
-      toast.warning("Error in created poll:", error)
+      console.error("error in created poll:", error);
+      toast.warning("error in created poll:", error)
     }
   };
 
@@ -49,7 +48,7 @@ function Pollsform() {
 
 
 
-  const [optionInput, setoptionInput] = useState('');//for options
+  const [optionInput, setoptionInput] = useState('');
   const handleAddOption = () => {
     if (optionInput.trim() !== '') {
       setpollsData(prevPoll => ({
