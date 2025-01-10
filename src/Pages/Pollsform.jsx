@@ -27,8 +27,6 @@ function Pollsform() {
         createdAt: timestamp
       });
       console.log("Poll created with ID:", docRef.id);
-
-      // Reset the form
       setpollsData({
         id: "",
         title: "",

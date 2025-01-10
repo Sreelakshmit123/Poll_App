@@ -10,10 +10,8 @@ import { ToastContainer, toast } from 'react-toastify';
 function Home() {
   const navigate = useNavigate()
   const [polls, setPolls] = useState([]);
-  const [openAccordion, setOpenAccordion] = useState(null); 
-  const [selectedPoll, setSelectedPoll] = useState(null); 
-  const [selectedOption, setSelectedOption] = useState(null); 
-  const [showResults, setShowResults] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState({});
+  const [result, setResult] = useState(false);
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "polls Collection"), (snapshot) => {
       const fetchedPolls = snapshot.docs.map((doc) => ({
@@ -23,30 +21,32 @@ function Home() {
       setPolls(fetchedPolls);
     });
 
-    return () => unsubscribe(); 
+    return () => unsubscribe();
   }, []);
 
 
 
 
-  const handleVote = async () => {
-    if (!selectedPoll || selectedOption === null) {
+  const handleVote = async (pollId) => {
+    if (!selectedOptions[pollId] && selectedOptions[pollId] !== 0) {
       alert("Please select an option to vote!");
       return;
     }
-
     try {
-      const pollDoc = doc(db, "polls Collection", selectedPoll);
+      const pollDoc = doc(db, "polls Collection", pollId);
       const pollSnapshot = await getDoc(pollDoc);
       const poll = pollSnapshot.data();
 
       const updatedOptions = [...poll.options];
-      updatedOptions[selectedOption].votes += 1;
+      updatedOptions[selectedOptions[pollId]].votes += 1;
 
       await updateDoc(pollDoc, { options: updatedOptions });
-
+      setResult(prev => ({
+        ...prev,
+        [pollId]: true,
+      }));
       console.log("Vote successfully updated!");
-      setShowResults(true); 
+      toast.success(`Vote recorded for poll: ${poll.title}`);
     } catch (error) {
       console.error("Error updating votes:", error);
     }
@@ -92,13 +92,11 @@ function Home() {
                   <ol>Poll Title</ol>
                 </ul>
                 <Accordion>
-                {polls.map((poll, index) => (
-                  <Accordion.Item 
-                  key={poll.id}
-                  eventKey={index}
-                  onClick={() => {
-                    setOpenAccordion(openAccordion === index ? null : index);
-                  }}>                  
+                  {polls.map((poll, index) => (
+                    <Accordion.Item
+                      key={poll.id}
+                      eventKey={index}
+                    >
                       <div >
                         <Accordion.Header>
                           <div className='d-flex text-dark  p-0 m-0 '>
@@ -109,7 +107,8 @@ function Home() {
                             <ol><p className='border bg-success text-light rounded-1 p-1 '>active</p></ol>
                           </div>
                         </Accordion.Header>
-                        {showResults && selectedPoll === poll.id ? (
+                        {result [poll.id] ? (
+
                           <ul className='text-dark ms-5 mt-2'>
                             {poll.options.map((option, index) => (
                               <li key={index}>
@@ -120,32 +119,38 @@ function Home() {
                         ) : (
                           <Accordion.Body >
                             <div >
-                              {poll.options.map((option, index) => (
-                                <div key={index} className="mb-2 d-flex ms-4">
-                                  <input style={{ height: '25px', width: '25px' }}
+                              {poll.options.map((option, optionIndex) => (
+                                <div key={optionIndex} className="mb-2 d-flex ms-4">
+                                  <input
+                                    style={{ height: "25px", width: "25px" }}
                                     type="radio"
                                     name={`poll-${poll.id}`}
-                                    value={index}
-                                    checked={selectedPoll === poll.id && selectedOption === index}
+                                    value={optionIndex}
+                                    checked={selectedOptions[poll.id] === optionIndex}
                                     onChange={() => {
-                                      setSelectedPoll(poll.id);
-                                      setSelectedOption(index);
+                                      setSelectedOptions((prev) => ({
+                                        ...prev,
+                                        [poll.id]: optionIndex, // Track selection for this poll
+                                      }));
                                     }}
                                   />
                                   <label className="ms-3 text-dark">{option.label}</label>
                                 </div>
                               ))}
-                              {selectedPoll === poll.id && (
-
-                                <button onClick={handleVote} style={{ backgroundColor: 'rgb(28, 49, 210)' }} className='btn text-light ms-5 mt-5 ps-4 pe-4'>Vote <i className="fa-solid fa-arrow-right ps-2"></i></button>
-                              )}
+                              <button
+                                onClick={() => handleVote(poll.id)} // Pass the specific poll ID
+                                style={{ backgroundColor: "rgb(28, 49, 210)" }}
+                                className="btn text-light ms-5 mt-5 ps-4 pe-4"
+                              >
+                                Vote <i className="fa-solid fa-arrow-right ps-2"></i>
+                              </button>
                             </div>
                           </Accordion.Body>
                         )}
                       </div>
-                      </Accordion.Item>
-                    ))}
-                  
+                    </Accordion.Item>
+                  ))}
+
                 </Accordion>
               </div>
             </Col>
